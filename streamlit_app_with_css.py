@@ -14,7 +14,6 @@ st.set_page_config(
     initial_sidebar_state="expanded")
 
 alt.themes.enable("dark")
-
 #######################
 # CSS styling
 st.markdown("""
@@ -64,12 +63,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 #######################
 # Load data
 df_reshaped = pd.read_csv('data/us-population-2010-2019-reshaped.csv')
-
-
 #######################
 # Sidebar
 with st.sidebar:
@@ -81,12 +77,16 @@ with st.sidebar:
     df_selected_year = df_reshaped[df_reshaped.year == selected_year]
     df_selected_year_sorted = df_selected_year.sort_values(by="population", ascending=False)
 
-    color_theme_list = ['blues', 'cividis', 'greens', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
-    selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
+    year_list.remove(selected_year)
+    year_list.insert(0, 'Previous')
+    selected_year2 = st.selectbox('Select a year to compare', year_list)
 
     state_list = sorted(list(df_reshaped.states.unique())[::-1])
     state_list.insert(0, 'All')
     selected_state = st.selectbox('Select a state', state_list)
+
+    color_theme_list = ['blues', 'cividis', 'greens', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
+    selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
  
 #######################
 # Plots
@@ -125,8 +125,6 @@ def make_choropleth(input_df, input_id, input_column, input_color_theme):
         height=350
     )
     return choropleth
-
-
 # Donut chart
 def make_donut(input_response, input_text, input_color):
   if input_color == 'blue':
@@ -179,9 +177,11 @@ def format_number(num):
     return f'{num // 1000} K'
 
 # Calculation year-over-year population migrations
-def calculate_population_difference(input_df, input_year):
+def calculate_population_difference(input_df, input_year, comp_year = 'Previous'):
+  if comp_year == 'Previous':
+        comp_year = input_year - 1
   selected_year_data = input_df[input_df['year'] == input_year].reset_index()
-  previous_year_data = input_df[input_df['year'] == input_year - 1].reset_index()
+  previous_year_data = input_df[input_df['year'] == comp_year].reset_index()
   selected_year_data['population_difference'] = selected_year_data.population.sub(previous_year_data.population, fill_value=0)
   return pd.concat([selected_year_data.states, selected_year_data.id, selected_year_data.population, selected_year_data.population_difference], axis=1).sort_values(by="population_difference", ascending=False)
 
@@ -205,7 +205,7 @@ col = st.columns((1.5, 4.5, 2), gap='medium')
 with col[0]:
     st.markdown('#### Gains/Losses')
 
-    df_population_difference_sorted = calculate_population_difference(df_reshaped, selected_year)
+    df_population_difference_sorted = calculate_population_difference(df_reshaped, selected_year, selected_year2)
 
     if selected_year > 2010:
         first_state_name = df_population_difference_sorted.states.iloc[0]
@@ -225,7 +225,7 @@ with col[0]:
         last_state_name = '---'
         last_state_population = '---'
         last_state_delta = ''
-        
+
     if selected_state == 'All':
         st.metric(label=last_state_name, value=last_state_population, delta=last_state_delta)
 
