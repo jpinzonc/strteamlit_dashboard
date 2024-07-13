@@ -4,7 +4,6 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import plotly.express as px
-import numpy as np
 
 from functions.pop_func import *
 #######################
@@ -112,17 +111,10 @@ if selected_state != []:
     df_reshaped = df_reshaped[df_reshaped.states.isin(selected_state)]
     df_selected_year= df_selected_year[df_selected_year.states.isin(selected_state)]
 
-
 info_cols = st.columns(3, gap = 'medium')
 with info_cols[0]:
     st.metric(f"Total US Population ({selected_year})", format_number(total_us_population))
 with info_cols[1]:
-    # show_year = selected_year2 if selected_year2 != 'Previous' else selected_year - 1
-    # if selected_year2 == 'Previous':
-    #     st.metric(f"Total US Population ({selected_year - 1})", format_number(total_us_populationprev))
-    # elif selected_year <= 2010:
-    #     st.metric(f"No Data", np.nan)
-    # else:
     st.metric(f"Total US Population ({selected_year2})", format_number(total_us_populationprev))
 with info_cols[2]:
     diff = total_us_population - total_us_populationprev
