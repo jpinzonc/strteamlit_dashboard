@@ -5,13 +5,15 @@ import pandas as pd
 import altair as alt
 import plotly.express as px
 
+from functions.pop_func import *
 #######################
 # Page configuration
 st.set_page_config(
-    page_title="US Population Dashboard",
-    page_icon="🏂",
-    layout="wide",
-    initial_sidebar_state="expanded")
+                    page_title="US Population Dashboard",
+                    page_icon="images/usa.ico",
+                    layout="wide",
+                    initial_sidebar_state="expanded"
+                    )
 
 alt.themes.enable("dark")
 #######################
@@ -69,137 +71,52 @@ df_reshaped = pd.read_csv('data/us-population-2010-2019-reshaped.csv')
 #######################
 # Sidebar
 with st.sidebar:
-    st.title('🏂 US Population Dashboard')
-    
+    title_container = st.container()
+    col1, col2 = st.columns((0.1,25), gap = 'medium')
+    with title_container:
+        with col1:
+            st.logo('images/usa_pop.png')
+        with col2:
+            st.markdown('<h2 style="color: lightblue;">US Population Dashboard</h1>',
+                        unsafe_allow_html=True)
+
     year_list = list(df_reshaped.year.unique())[::-1]
     
-    selected_year = st.selectbox('Select a year', year_list)
+    selected_year = st.selectbox('Select Year', year_list)
     df_selected_year = df_reshaped[df_reshaped.year == selected_year]
     df_selected_year_sorted = df_selected_year.sort_values(by="population", ascending=False)
 
-    year_list.remove(selected_year)
-    year_list.insert(0, 'Previous')
-    selected_year2 = st.selectbox('Select a year to compare', year_list)
+    total_us_population = df_reshaped[df_reshaped.year == selected_year].population.sum()
+
+    if selected_year != min(df_reshaped.year.unique()):    
+        year_list.remove(selected_year)
+        year_list.insert(0, 'Previous')
+        selected_year2 = st.selectbox('Select Year to Compare', year_list)
+        total_us_populationprev = df_reshaped[df_reshaped.year == selected_year2].population.sum()
+    else: 
+        selected_year2 = 'Previous'
+        total_us_populationprev = df_reshaped[df_reshaped.year == selected_year -1].population.sum()
+
 
     state_list = sorted(list(df_reshaped.states.unique())[::-1])
-    state_list.insert(0, 'All')
-    selected_state = st.selectbox('Select a state', state_list)
-
-    color_theme_list = ['blues', 'cividis', 'greens', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
-    selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
+    # state_list.insert(0, 'All')
+    selected_state = st.multiselect('Select States', state_list)
  
 #######################
-# Plots
-
-# Heatmap
-def make_heatmap(input_df, input_y, input_x, input_color, input_color_theme):
-    heatmap = alt.Chart(input_df).mark_rect().encode(
-            y=alt.Y(f'{input_y}:O', axis=alt.Axis(title="Year", titleFontSize=18, titlePadding=15, titleFontWeight=900, labelAngle=0)),
-            x=alt.X(f'{input_x}:O', axis=alt.Axis(title="", titleFontSize=18, titlePadding=15, titleFontWeight=900)),
-            color=alt.Color(f'max({input_color}):Q',
-                             legend=None,
-                             scale=alt.Scale(scheme=input_color_theme)),
-            stroke=alt.value('black'),
-            strokeWidth=alt.value(0.25),
-        ).properties(width=900
-        ).configure_axis(
-        labelFontSize=12,
-        titleFontSize=12
-        ) 
-    # height=300
-    return heatmap
-
-# Choropleth map
-def make_choropleth(input_df, input_id, input_column, input_color_theme):
-    choropleth = px.choropleth(input_df, locations=input_id, color=input_column, locationmode="USA-states",
-                               color_continuous_scale=input_color_theme,
-                               range_color=(0, max(df_selected_year.population)),
-                               scope="usa",
-                               labels={'population':'Population'}
-                              )
-    choropleth.update_layout(
-        template='plotly_dark',
-        plot_bgcolor='rgba(0, 0, 0, 0)',
-        paper_bgcolor='rgba(0, 0, 0, 0)',
-        margin=dict(l=0, r=0, t=0, b=0),
-        height=350
-    )
-    return choropleth
-# Donut chart
-def make_donut(input_response, input_text, input_color):
-  if input_color == 'blue':
-      chart_color = ['#29b5e8', '#155F7A']
-  if input_color == 'green':
-      chart_color = ['#27AE60', '#12783D']
-  if input_color == 'orange':
-      chart_color = ['#F39C12', '#875A12']
-  if input_color == 'red':
-      chart_color = ['#E74C3C', '#781F16']
-    
-  source = pd.DataFrame({
-      "Topic": ['', input_text],
-      "% value": [100-input_response, input_response]
-  })
-  source_bg = pd.DataFrame({
-      "Topic": ['', input_text],
-      "% value": [100, 0]
-  })
-    
-  plot = alt.Chart(source).mark_arc(innerRadius=45, cornerRadius=25).encode(
-      theta="% value",
-      color= alt.Color("Topic:N",
-                      scale=alt.Scale(
-                          #domain=['A', 'B'],
-                          domain=[input_text, ''],
-                          # range=['#29b5e8', '#155F7A']),  # 31333F
-                          range=chart_color),
-                      legend=None),
-  ).properties(width=130, height=130)
-    
-  text = plot.mark_text(align='center', color="#29b5e8", font="Lato", fontSize=32, fontWeight=700, fontStyle="italic").encode(text=alt.value(f'{input_response} %'))
-  plot_bg = alt.Chart(source_bg).mark_arc(innerRadius=45, cornerRadius=20).encode(
-      theta="% value",
-      color= alt.Color("Topic:N",
-                      scale=alt.Scale(
-                          # domain=['A', 'B'],
-                          domain=[input_text, ''],
-                          range=chart_color),  # 31333F
-                      legend=None),
-  ).properties(width=130, height=130)
-  return plot_bg + plot + text
-
-# Convert population to text 
-def format_number(num):
-    if num > 1000000:
-        if not num % 1000000:
-            return f'{num // 1000000} M'
-        return f'{round(num / 1000000, 2)} M'
-    return f'{num // 1000} K'
-
-# Calculation year-over-year population migrations
-def calculate_population_difference(input_df, input_year, comp_year = 'Previous'):
-  if comp_year == 'Previous':
-        comp_year = input_year - 1
-  selected_year_data = input_df[input_df['year'] == input_year].reset_index()
-  previous_year_data = input_df[input_df['year'] == comp_year].reset_index()
-  selected_year_data['population_difference'] = selected_year_data.population.sub(previous_year_data.population, fill_value=0)
-  return pd.concat([selected_year_data.states, selected_year_data.id, selected_year_data.population, selected_year_data.population_difference], axis=1).sort_values(by="population_difference", ascending=False)
-
-
-#######################
 # Dashboard Main Panel
-info_cols = st.columns(2, gap = 'large')
+if selected_state != []:
+    df_reshaped = df_reshaped[df_reshaped.states.isin(selected_state)]
+    df_selected_year= df_selected_year[df_selected_year.states.isin(selected_state)]
 
-total_us_population = format_number(df_reshaped[df_reshaped.year == selected_year].population.sum())
-
-if selected_state != 'All':
-    df_reshaped = df_reshaped[df_reshaped.states==selected_state]
-    df_selected_year= df_selected_year[df_selected_year.states==selected_state]
-
+info_cols = st.columns(3, gap = 'medium')
 with info_cols[0]:
-    st.metric("Year", selected_year)
+    show_year = selected_year2 if selected_year2 != 'Previous' else selected_year - 1
+    st.metric(f"Total US Population ({selected_year})", format_number(total_us_population))
 with info_cols[1]:
-    st.metric("Total US Population", total_us_population)
+    st.metric(f"Total US Population ({show_year})", format_number(total_us_populationprev))
+with info_cols[2]:
+    diff = total_us_population - total_us_populationprev
+    st.metric(f"US Population change between {selected_year} and {selected_year2}", format_number(diff))
 
 col = st.columns((1.5, 4.5, 2), gap='medium')
 with col[0]:
@@ -226,8 +143,8 @@ with col[0]:
         last_state_population = '---'
         last_state_delta = ''
 
-    if selected_state == 'All':
-        st.metric(label=last_state_name, value=last_state_population, delta=last_state_delta)
+    # if selected_state != [] and len(selected_state) ==1: #selected_state == []:
+    st.metric(label=last_state_name, value=last_state_population, delta=last_state_delta)
 
     st.markdown('#### States Migration')
 
@@ -258,11 +175,13 @@ with col[0]:
 with col[1]:
     st.markdown('#### Total Population')
     
-    choropleth = make_choropleth(df_selected_year, 'states_code', 'population', selected_color_theme)
+    color_theme_list = ['blues', 'cividis', 'greens', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
+    selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
+
+    choropleth = make_choropleth(df_selected_year, 'states_code', 'population', selected_color_theme, max(df_selected_year.population))
     st.plotly_chart(choropleth, use_container_width=True)
-    if selected_state == 'All':
-        heatmap = make_heatmap(df_reshaped, 'year', 'states', 'population', selected_color_theme)
-        st.altair_chart(heatmap, use_container_width=True)
+    heatmap = make_heatmap(df_reshaped, 'year', 'states', 'population', selected_color_theme)
+    st.altair_chart(heatmap, use_container_width=True)
 
 with col[2]:
     st.markdown('#### Top States')
@@ -286,7 +205,9 @@ with col[2]:
     
     with st.expander('About', expanded=True):
         st.write('''
-            - Data: [U.S. Census Bureau](https://www.census.gov/data/datasets/time-series/demo/popest/2010s-state-total.html).
+            - Data: 
+                 - [U.S. Census Bureau 2010-2019](https://www.census.gov/data/datasets/time-series/demo/popest/2010s-state-total.html)
+                 - [U.S. Census Bureau 2020-2023](https://www.census.gov/data/datasets/time-series/demo/popest/2020s-state-total.html)
             - :orange[**Gains/Losses**]: states with high inbound/ outbound migration for selected year
             - :orange[**States Migration**]: percentage of states with annual inbound/ outbound migration > 50,000
             ''')
