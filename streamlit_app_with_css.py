@@ -84,7 +84,10 @@ with st.sidebar:
     color_theme_list = ['blues', 'cividis', 'greens', 'inferno', 'magma', 'plasma', 'reds', 'rainbow', 'turbo', 'viridis']
     selected_color_theme = st.selectbox('Select a color theme', color_theme_list)
 
-
+    state_list = sorted(list(df_reshaped.states.unique())[::-1])
+    state_list.insert(0, 'All')
+    selected_state = st.selectbox('Select a state', state_list)
+ 
 #######################
 # Plots
 
@@ -189,6 +192,10 @@ info_cols = st.columns(2, gap = 'large')
 
 total_us_population = format_number(df_reshaped[df_reshaped.year == selected_year].population.sum())
 
+if selected_state != 'All':
+    df_reshaped = df_reshaped[df_reshaped.states==selected_state]
+    df_selected_year= df_selected_year[df_selected_year.states==selected_state]
+
 with info_cols[0]:
     st.metric("Year", selected_year)
 with info_cols[1]:
@@ -205,8 +212,8 @@ with col[0]:
         first_state_population = format_number(df_population_difference_sorted.population.iloc[0])
         first_state_delta = format_number(df_population_difference_sorted.population_difference.iloc[0])
     else:
-        first_state_name = '-'
-        first_state_population = '-'
+        first_state_name = '---'
+        first_state_population = '---'
         first_state_delta = ''
     st.metric(label=first_state_name, value=first_state_population, delta=first_state_delta)
 
@@ -215,12 +222,13 @@ with col[0]:
         last_state_population = format_number(df_population_difference_sorted.population.iloc[-1])   
         last_state_delta = format_number(df_population_difference_sorted.population_difference.iloc[-1])   
     else:
-        last_state_name = '-'
-        last_state_population = '-'
+        last_state_name = '---'
+        last_state_population = '---'
         last_state_delta = ''
-    st.metric(label=last_state_name, value=last_state_population, delta=last_state_delta)
+        
+    if selected_state == 'All':
+        st.metric(label=last_state_name, value=last_state_population, delta=last_state_delta)
 
-    
     st.markdown('#### States Migration')
 
     if selected_year > 2010:
@@ -252,10 +260,9 @@ with col[1]:
     
     choropleth = make_choropleth(df_selected_year, 'states_code', 'population', selected_color_theme)
     st.plotly_chart(choropleth, use_container_width=True)
-    
-    heatmap = make_heatmap(df_reshaped, 'year', 'states', 'population', selected_color_theme)
-    st.altair_chart(heatmap, use_container_width=True)
-    
+    if selected_state == 'All':
+        heatmap = make_heatmap(df_reshaped, 'year', 'states', 'population', selected_color_theme)
+        st.altair_chart(heatmap, use_container_width=True)
 
 with col[2]:
     st.markdown('#### Top States')
@@ -263,7 +270,8 @@ with col[2]:
     st.dataframe(df_selected_year_sorted,
                  column_order=("states", "population"),
                  hide_index=True,
-                 width=None,
+                #  width=500,
+                 use_container_width=True,
                  column_config={
                     "states": st.column_config.TextColumn(
                         "States",
