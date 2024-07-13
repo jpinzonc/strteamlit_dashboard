@@ -104,7 +104,10 @@ with st.sidebar:
     state_list = sorted(list(df_reshaped.states.unique())[::-1])
     # state_list.insert(0, 'All')
     selected_state = st.multiselect('Select States', state_list)
- 
+    st.write('''
+                - [APP URL](https://strteamlitdashboard.streamlit.app/)
+                - [GITHUB](https://github.com/jpinzonc/strteamlit_dashboard)
+                ''')
 #######################
 # Dashboard Main Panel
 if selected_state != []:
