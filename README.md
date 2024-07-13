@@ -1,3 +1,13 @@
+# STREAMLIT DASHBOARD 
+
+Following: 
+https://www.youtube.com/watch?v=asFqpMDSPdM
+https://github.com/dataprofessor/population-dashboard/tree/master
+
+
+_____
+# This is the original readme file contents: 
+
 # 🏂 US Population Dashboard
 
 A dashboard web app template built in Python using Streamlit.
