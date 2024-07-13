@@ -92,7 +92,7 @@ with st.sidebar:
         year_list.remove(selected_year)
         year_list.insert(0, 'Previous')
         selected_year2 = st.selectbox('Select Year to Compare', year_list)
-        selected_year, selected_year2 = sorted(selected_year, selected_year2)
+        selected_year, selected_year2 = sorted([selected_year, selected_year2])
         total_us_populationprev = df_reshaped[df_reshaped.year == selected_year2].population.sum()
     else: 
         selected_year2 = 'Previous'
