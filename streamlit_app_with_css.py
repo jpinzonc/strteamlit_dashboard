@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import plotly.express as px
+import numpy as np
 
 from functions.pop_func import *
 #######################
@@ -85,19 +86,21 @@ with st.sidebar:
     selected_year = st.selectbox('Select Year', year_list)
     df_selected_year = df_reshaped[df_reshaped.year == selected_year]
     df_selected_year_sorted = df_selected_year.sort_values(by="population", ascending=False)
+    earliest = min(df_reshaped.year.unique())
 
-    total_us_population = df_reshaped[df_reshaped.year == selected_year].population.sum()
-
-    if selected_year != min(df_reshaped.year.unique()):    
+    if selected_year != earliest:    
         year_list.remove(selected_year)
-        year_list.insert(0, 'Previous')
+        year_list.insert(0, selected_year - 1)
         selected_year2 = st.selectbox('Select Year to Compare', year_list)
-        selected_year, selected_year2 = sorted([selected_year, selected_year2])
-        total_us_populationprev = df_reshaped[df_reshaped.year == selected_year2].population.sum()
-    else: 
-        selected_year2 = 'Previous'
-        total_us_populationprev = df_reshaped[df_reshaped.year == selected_year -1].population.sum()
+    else:  
+        selected_year2 = earliest
 
+    sel_yr_list = [selected_year, selected_year2]
+    sel_yr_list = sorted(sel_yr_list,  reverse=True)
+    selected_year, selected_year2 = sel_yr_list
+    
+    total_us_populationprev = df_reshaped[df_reshaped.year == selected_year2].population.sum()
+    total_us_population = df_reshaped[df_reshaped.year == selected_year].population.sum()   
 
     state_list = sorted(list(df_reshaped.states.unique())[::-1])
     # state_list.insert(0, 'All')
@@ -109,15 +112,21 @@ if selected_state != []:
     df_reshaped = df_reshaped[df_reshaped.states.isin(selected_state)]
     df_selected_year= df_selected_year[df_selected_year.states.isin(selected_state)]
 
+
 info_cols = st.columns(3, gap = 'medium')
 with info_cols[0]:
-    show_year = selected_year2 if selected_year2 != 'Previous' else selected_year - 1
     st.metric(f"Total US Population ({selected_year})", format_number(total_us_population))
 with info_cols[1]:
-    st.metric(f"Total US Population ({show_year})", format_number(total_us_populationprev))
+    # show_year = selected_year2 if selected_year2 != 'Previous' else selected_year - 1
+    # if selected_year2 == 'Previous':
+    #     st.metric(f"Total US Population ({selected_year - 1})", format_number(total_us_populationprev))
+    # elif selected_year <= 2010:
+    #     st.metric(f"No Data", np.nan)
+    # else:
+    st.metric(f"Total US Population ({selected_year2})", format_number(total_us_populationprev))
 with info_cols[2]:
     diff = total_us_population - total_us_populationprev
-    st.metric(f"US Population change between {selected_year} and {selected_year2}", format_number(diff))
+    st.metric(f"US Population change between {selected_year2} and {selected_year}", format_number(diff))
 
 col = st.columns((1.5, 4.5, 2), gap='medium')
 with col[0]:
